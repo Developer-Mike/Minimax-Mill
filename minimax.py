@@ -43,7 +43,7 @@ pixel = tkinter.PhotoImage(width=40, height=40)
 
 player_is_black = True
 black_turn = True
-depth = 20
+depth = 5
 board = core.Board()
 fields = [[], [], []]
 
@@ -77,11 +77,16 @@ def make_move():
     print(f"Making move from {from_} to {to} and remove {removeTile}")
     player_move = core.Move(core.TilePosition(from_[0], from_[1]), core.TilePosition(to[0], to[1]), core.TilePosition(removeTile[0], removeTile[1]))
 
-    if not is_move_possible(player_move, core.getPossibleMoves(board, player_is_black)):
+    possible_moves = core.getPossibleMoves(board, player_is_black)
+    if not is_move_possible(player_move, possible_moves):
         print("Invalid move.")
+        for move in possible_moves:
+            print(f"A possible move would be {move.toString()}")
+
         return
 
     board = core.makeMove(board, player_move, player_is_black)
+    refresh_fields()
 
     print("Processing")
 
@@ -94,13 +99,22 @@ def make_move():
             best_move_value = move_value
 
     board = core.makeMove(board, best_move, not player_is_black)
+    refresh_fields()
 
     print("Processed")
 
-    refresh_fields()
+    et_from_entry.delete(0, tkinter.END)
+    et_to_entry.delete(0, tkinter.END)
+    et_remove_entry.delete(0, tkinter.END)
+
     et_from_entry.focus()
 
+    print(f"Best move score: {best_move_value}")
+    core.printBoard(board)
+
 def field_pressed(ring_i, i):
+    global et_from_entry, et_to_entry, et_remove_entry
+
     et_to_edit = root.focus_get()
 
     if type(et_to_edit) != tk.Entry:
@@ -108,6 +122,11 @@ def field_pressed(ring_i, i):
 
     et_to_edit.delete(0, tkinter.END)
     et_to_edit.insert(0, f"{ring_i},{i}")
+
+    if et_to_edit == et_from_entry:
+        et_to_entry.focus()
+    elif et_to_edit == et_to_entry:
+        et_remove_entry.focus()
 
 def refresh_fields():
     global fields, board

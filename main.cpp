@@ -5,11 +5,11 @@
 #include <array>
 #include <iterator>
 #include <map>
-#include <limits>
 #include <set>
+#include <limits>
 using namespace std;
 
-const int infinity = numeric_limits<int>::infinity();
+const int infinity = numeric_limits<int>::max();
 
 enum GameState {
     BEGINNING,
@@ -140,10 +140,34 @@ bool canMoveThere(Board board, TilePosition targetPosition) {
     return targetPosition.value(board) == ' ';
 }
 
+Board makeMove(Board board, Move move, bool isBlack) {
+    Board newBoard = board;
+
+    if (move.from_.ring != -1) newBoard.array.at(move.from_.ring).at(move.from_.i) = ' ';
+    if (move.to.ring != -1) newBoard.array.at(move.to.ring).at(move.to.i) = (isBlack ? 'b' : 'w');
+    if (move.removeTile.ring != -1) newBoard.array.at(move.removeTile.ring).at(move.removeTile.i) = ' ';
+
+    newBoard.moveAmount[move.to.value(newBoard)]++;
+
+    map<char, int> tileCount = countTiles(newBoard);
+    if (board.gameState == BEGINNING && (board.moveAmount['b'] >= 9 && board.moveAmount['w'] >= 9)) {
+        newBoard.gameState = NORMAL;
+    } else if (board.gameState == NORMAL && (tileCount['b'] == 3 || tileCount['w'] == 3)) {
+        newBoard.gameState = ENDING;
+    } else if (board.gameState == ENDING && (tileCount['b'] < 3 || tileCount['w'] < 3)) {
+        newBoard.gameState = FINISHED;
+    }
+
+    return newBoard;
+}
+
 list<Move> createListWithRemovedTiles(Board board, TilePosition from, TilePosition to, bool isBlack) {
     list<Move> moves;
 
-    if (!isInMill(board, to, isBlack)) {
+    /*from.wrapAround();
+    to.wrapAround();*/
+
+    if (!isInMill(makeMove(board, Move{from, to}, isBlack), to, isBlack)) {
         moves.push_back(Move{from, to, {}});
     } else {
         for (int ringI = 0; ringI < 3; ringI++) {
@@ -234,27 +258,6 @@ list<Move> getPossibleMoves(Board board, bool isBlack) {
     return possibleMoves;
 }
 
-Board makeMove(Board board, Move move, bool isBlack) {
-    Board newBoard = board;
-
-    if (move.from_.ring != -1) newBoard.array.at(move.from_.ring).at(move.from_.i) = ' ';
-    if (move.to.ring != -1) newBoard.array.at(move.to.ring).at(move.to.i) = (isBlack ? 'b' : 'w');
-    if (move.removeTile.ring != -1) newBoard.array.at(move.removeTile.ring).at(move.removeTile.i) = ' ';
-
-    newBoard.moveAmount[move.to.value(board)]++;
-
-    map<char, int> tileCount = countTiles(newBoard);
-    if (board.gameState == BEGINNING && (board.moveAmount['b'] >= 9 && board.moveAmount['w'] >= 9)) {
-        newBoard.gameState = NORMAL;
-    } else if (board.gameState == NORMAL && (tileCount['b'] == 3 || tileCount['w'] == 3)) {
-        newBoard.gameState = ENDING;
-    } else if (board.gameState == ENDING && (tileCount['b'] < 3 || tileCount['w'] < 3)) {
-        newBoard.gameState = FINISHED;
-    }
-
-    return newBoard;
-}
-
 int minimax(Board board, int depth, bool isBlack, int alpha = -infinity, int beta = infinity) {
     if (depth == 0 || board.gameState == FINISHED) {
         return evaluateBoard(board);
@@ -269,8 +272,8 @@ int minimax(Board board, int depth, bool isBlack, int alpha = -infinity, int bet
 
             int eval = minimax(newBoard, depth - 1, !isBlack, alpha, beta);
             maxEval = max(maxEval, eval);
-            alpha = max(alpha, eval);
 
+            alpha = max(alpha, maxEval);
             if (beta <= alpha) {
                 break;
             }
@@ -286,8 +289,8 @@ int minimax(Board board, int depth, bool isBlack, int alpha = -infinity, int bet
 
             int eval = minimax(newBoard, depth - 1, !isBlack, alpha, beta);
             minEval = min(minEval, eval);
-            beta = min(beta, eval);
-            
+
+            beta = min(beta, minEval);
             if (beta <= alpha) {
                 break;
             }
