@@ -258,19 +258,19 @@ list<Move> getPossibleMoves(Board board, bool isBlack) {
     return possibleMoves;
 }
 
-int minimax(Board board, int depth, bool isBlack, int alpha = -infinity, int beta = infinity) {
-    if (depth == 0 || board.gameState == FINISHED) {
-        return evaluateBoard(board);
+int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int beta = infinity) {
+    if (depth == 0 || (*board).gameState == FINISHED) {
+        return evaluateBoard(*board);
     }
 
     if (isBlack) {
         int maxEval = -infinity;
 
-        list<Move> moves = getPossibleMoves(board, isBlack);
+        list<Move> moves = getPossibleMoves(*board, isBlack);
         for (Move move : moves) {
-            Board newBoard = makeMove(board, move, isBlack);
+            Board newBoard = makeMove(*board, move, isBlack);
 
-            int eval = minimax(newBoard, depth - 1, !isBlack, alpha, beta);
+            int eval = minimax(&newBoard, depth - 1, !isBlack, alpha, beta);
             maxEval = max(maxEval, eval);
 
             alpha = max(alpha, maxEval);
@@ -283,11 +283,11 @@ int minimax(Board board, int depth, bool isBlack, int alpha = -infinity, int bet
     } else {
         int minEval = infinity;
 
-        list<Move> moves = getPossibleMoves(board, isBlack);
+        list<Move> moves = getPossibleMoves(*board, isBlack);
         for (Move move : moves) {
-            Board newBoard = makeMove(board, move, isBlack);
+            Board newBoard = makeMove(*board, move, isBlack);
 
-            int eval = minimax(newBoard, depth - 1, !isBlack, alpha, beta);
+            int eval = minimax(&newBoard, depth - 1, !isBlack, alpha, beta);
             minEval = min(minEval, eval);
 
             beta = min(beta, minEval);
@@ -303,12 +303,13 @@ int minimax(Board board, int depth, bool isBlack, int alpha = -infinity, int bet
 int main() {
     Board debugBoard;
 
+    debugBoard = makeMove(debugBoard, (*getPossibleMoves(debugBoard, false).begin()), false);
     printBoard(debugBoard);
 
-    list<Move> possibleMoves = getPossibleMoves(debugBoard, false);
-    for (Move move : possibleMoves) {
-        cout << move.toString() << endl;
-    }
+    list<Move> possibleMoves = getPossibleMoves(debugBoard, true);
+
+    Board newBoard = makeMove(debugBoard, (*possibleMoves.begin()), true);
+    cout << minimax(&newBoard, 6, true) << endl;
     
     return 0;
 }

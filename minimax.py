@@ -93,7 +93,7 @@ def make_move():
     best_move = None
     best_move_value = None
     for move in core.getPossibleMoves(board, not player_is_black):
-        move_value = core.minimax(board, depth, not player_is_black)
+        move_value = core.minimax(core.makeMove(board, move, not player_is_black), depth, not player_is_black)
         if best_move is None or best_move_value < move_value:
             best_move = move
             best_move_value = move_value
