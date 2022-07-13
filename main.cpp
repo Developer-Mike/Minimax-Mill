@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <limits>
+#include <tuple>
 using namespace std;
 
 const int infinity = numeric_limits<int>::max();
@@ -70,7 +71,7 @@ void printBoard(Board board) {
     cout << board.array[0][6] << "--" << board.array[0][5] << "--" << board.array[0][4] << endl;
 }
 
-map<char, int> countTiles(Board board) {
+map<char, int> countTiles(Board* board) {
     map<char, int> pieceCount = {
         {'b', 0},
         {'w', 0},
@@ -79,7 +80,7 @@ map<char, int> countTiles(Board board) {
 
     for (int ringI = 0; ringI < 3; ringI++) {
         for (int i = 0; i < 8; i++) {
-            pieceCount[TilePosition{ringI, i}.value(board)]++;
+            ++pieceCount[(*board).array[ringI][i]];
         }
     }
 
@@ -131,7 +132,7 @@ bool isInMill(Board board, TilePosition tilePosition, bool isBlack) {
 }
 
 int evaluateBoard(Board board) {
-    map<char, int> pieceCount = countTiles(board);
+    map<char, int> pieceCount = countTiles(&board);
 
     return (pieceCount['b'] - pieceCount['w']);
 }
@@ -147,9 +148,9 @@ Board makeMove(Board board, Move move, bool isBlack) {
     if (move.to.ring != -1) newBoard.array.at(move.to.ring).at(move.to.i) = (isBlack ? 'b' : 'w');
     if (move.removeTile.ring != -1) newBoard.array.at(move.removeTile.ring).at(move.removeTile.i) = ' ';
 
-    newBoard.moveAmount[move.to.value(newBoard)]++;
+    ++newBoard.moveAmount[move.to.value(newBoard)];
 
-    map<char, int> tileCount = countTiles(newBoard);
+    map<char, int> tileCount = countTiles(&newBoard);
     if (board.gameState == BEGINNING && (board.moveAmount['b'] >= 9 && board.moveAmount['w'] >= 9)) {
         newBoard.gameState = NORMAL;
     } else if (board.gameState == NORMAL && (tileCount['b'] == 3 || tileCount['w'] == 3)) {
@@ -163,9 +164,6 @@ Board makeMove(Board board, Move move, bool isBlack) {
 
 list<Move> createListWithRemovedTiles(Board board, TilePosition from, TilePosition to, bool isBlack) {
     list<Move> moves;
-
-    /*from.wrapAround();
-    to.wrapAround();*/
 
     if (!isInMill(makeMove(board, Move{from, to}, isBlack), to, isBlack)) {
         moves.push_back(Move{from, to, {}});
@@ -227,9 +225,10 @@ list<Move> getPossibleEndingMovesForTile(Board board, TilePosition tilePosition,
 
 list<Move> getPossibleMoves(Board board, bool isBlack) {
     list<Move> possibleMoves;
-    int ownTileCount = countTiles(board)[(isBlack ? 'b' : 'w')];
+    char ownTileChar = (isBlack ? 'b' : 'w');
+    int ownTileCount = countTiles(&board)[ownTileChar];
 
-    if (board.gameState == BEGINNING && board.moveAmount[(isBlack ? 'b' : 'w')] < 9) { // If game is at start
+    if (board.gameState == BEGINNING && board.moveAmount[ownTileChar] < 9) { // If game is at start
         for (int ringI = 0; ringI < 3; ringI++) {
             for (int i = 0; i < 8; i++) {
                 TilePosition targetPosition = {ringI, i};
@@ -245,8 +244,7 @@ list<Move> getPossibleMoves(Board board, bool isBlack) {
                 char tileValue = tilePosition.value(board);
 
                 if (tileValue == ' ') continue;
-                if (tileValue == 'b' && !isBlack) continue;
-                if (tileValue == 'w' && isBlack) continue;
+                if (tileValue != ownTileChar) continue;
                 
                 possibleMoves.splice(possibleMoves.end(), (board.gameState == (ENDING && ownTileCount == 3) ? 
                     getPossibleEndingMovesForTile(board, tilePosition, isBlack) :
@@ -254,6 +252,10 @@ list<Move> getPossibleMoves(Board board, bool isBlack) {
             }
         }
     }
+
+    possibleMoves.sort([](Move a, Move b) {
+        return a.removeTile.ring != -1 && b.removeTile.ring == -1;
+    });
 
     return possibleMoves;
 }

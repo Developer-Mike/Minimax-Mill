@@ -8,6 +8,7 @@ print("Compiled.")
 from json.encoder import INFINITY
 import tkinter
 import tkinter.ttk as tk
+import tqdm
 
 positions = {
     (0, 0): (0, 0),
@@ -43,7 +44,7 @@ pixel = tkinter.PhotoImage(width=40, height=40)
 
 player_is_black = True
 black_turn = True
-depth = 5
+depth = 6
 board = core.Board()
 fields = [[], [], []]
 
@@ -55,13 +56,14 @@ def is_move_possible(move, possible_moves):
         if tile_position_equal(possible_move.from_, move.from_) and tile_position_equal(possible_move.to, move.to) and tile_position_equal(possible_move.removeTile, move.removeTile):
             return True
     return False
-
+ 
 def make_move():
     global fields, player_is_black, black_turn, board, et_from_entry, et_to_entry, et_remove_entry
 
     if player_is_black and black_turn:
         black_turn = not black_turn
 
+    # Player Move
     from_ = tuple([(int(coord.strip()) if len(coord) == 1 else None) for coord in et_from_entry.get().split(",")])
     if len(from_) != 2:
         from_ = (-1, -1)
@@ -88,16 +90,18 @@ def make_move():
     board = core.makeMove(board, player_move, player_is_black)
     refresh_fields()
 
+    # Computer Move
     print("Processing")
 
     best_move = None
     best_move_value = None
-    for move in core.getPossibleMoves(board, not player_is_black):
+    for move in tqdm.tqdm(core.getPossibleMoves(board, not player_is_black)):
         move_value = core.minimax(core.makeMove(board, move, not player_is_black), depth, not player_is_black)
         if best_move is None or best_move_value < move_value:
             best_move = move
             best_move_value = move_value
 
+    print(f"Best move score: {best_move_value}")
     board = core.makeMove(board, best_move, not player_is_black)
     refresh_fields()
 
@@ -108,9 +112,6 @@ def make_move():
     et_remove_entry.delete(0, tkinter.END)
 
     et_from_entry.focus()
-
-    print(f"Best move score: {best_move_value}")
-    core.printBoard(board)
 
 def field_pressed(ring_i, i):
     global et_from_entry, et_to_entry, et_remove_entry
