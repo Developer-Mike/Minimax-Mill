@@ -9,6 +9,7 @@ from json.encoder import INFINITY
 import tkinter
 import tkinter.ttk as tk
 import tqdm
+import time
 
 positions = {
     (0, 0): (0, 0),
@@ -92,19 +93,26 @@ def make_move():
 
     # Computer Move
     print("Processing")
+    start = time.time()
 
     best_move = None
     best_move_value = None
-    for move in tqdm.tqdm(core.getPossibleMoves(board, not player_is_black)):
+    for move in core.getPossibleMoves(board, not player_is_black):
+        start_minimax = time.time()
         move_value = core.minimax(core.makeMove(board, move, not player_is_black), depth, not player_is_black)
-        if best_move is None or best_move_value < move_value:
+        print(f"Minimax took {time.time() - start_minimax} seconds")
+
+        if best_move is None or (best_move_value < move_value and not player_is_black) or (best_move_value > move_value and player_is_black):
             best_move = move
             best_move_value = move_value
 
     print(f"\nBest move score: {best_move_value}")
+    print(f"Best move: {best_move.toString()}")
+
     board = core.makeMove(board, best_move, not player_is_black)
     refresh_fields()
 
+    print(f"Processing took {time.time() - start} seconds")
     print("Processed")
 
     et_from_entry.delete(0, tkinter.END)

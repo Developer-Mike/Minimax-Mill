@@ -20,6 +20,7 @@ enum GameState {
 };
 
 struct Board {
+    array<int, 2> moveAmount = {0, 0};
     array<array<char, 8>, 3> array = {{
         {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
         {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
@@ -27,7 +28,6 @@ struct Board {
     }};
 
     GameState gameState = BEGINNING;
-    map<char, int> moveAmount = {{'b', 0}, {'w', 0}};
 };
 
 struct TilePosition {
@@ -38,9 +38,9 @@ struct TilePosition {
         return "(" + to_string(ring) + ":" + to_string(i) + ")";
     }
 
-    char value(Board board) {
+    char value(Board* board) {
         wrapAround();
-        return board.array[ring][i];
+        return board->array[ring][i];
     }
 
     void wrapAround() {
@@ -93,15 +93,13 @@ array<int, 2> countTiles(Board* board) {
     return {bCount, wCount};
 }
 
-bool isInMill(Board board, TilePosition tilePosition, bool isBlack) {
-    // Ignore passed tile, because it is for willCreateMill
-
-    if (tilePosition.i % 2 != 0) {
+bool isInMill(Board* board, TilePosition* tilePosition, bool isBlack) {
+    if ((*tilePosition).i % 2 != 0) {
         // Check row
-        TilePosition leftTile = tilePosition;
+        TilePosition leftTile = (*tilePosition);
         leftTile.i--;
 
-        TilePosition rightTile = tilePosition;
+        TilePosition rightTile = (*tilePosition);
         rightTile.i++;
 
         if (leftTile.value(board) == (isBlack ? 'b' : 'w') && leftTile.value(board) == rightTile.value(board)) {
@@ -112,9 +110,9 @@ bool isInMill(Board board, TilePosition tilePosition, bool isBlack) {
         set<char> otherTileValues;
         int arrayI = 0;
         for (int ringI = 0; ringI < 3; ringI++) {
-            if (tilePosition.ring == ringI) continue;
+            if ((*tilePosition).ring == ringI) continue;
 
-            otherTileValues.insert(TilePosition{ringI, tilePosition.i}.value(board));
+            otherTileValues.insert(TilePosition{ringI, (*tilePosition).i}.value(board));
             arrayI++;
         }
 
@@ -122,56 +120,55 @@ bool isInMill(Board board, TilePosition tilePosition, bool isBlack) {
             return true;
         }
     } else  {
-        // Check edge TODO
-        for (int direction = -1; direction <= 1; direction += 2) {
-            set<char> otherTileSet;
+        // Check edge
+        for (int relI = 0; relI < 3; relI++) {
+            /*set<char> otherTileSet;
             for (int i = 1; i < 3; i++) {
-                otherTileSet.insert(TilePosition{tilePosition.ring, tilePosition.i + (direction * i)}.value(board));
+                otherTileSet.insert(TilePosition{(*tilePosition).ring, (*tilePosition).i + (direction * i)}.value(board));
             }
 
             if (otherTileSet.size() == 1 && *(otherTileSet.begin()) == (isBlack ? 'b' : 'w')) {
                 return true;
-            }
+            }*/
         }
     }
     return false;
 }
 
-int evaluateBoard(Board board) {
-    array<int, 2> pieceCount = countTiles(&board);
-    return (pieceCount[0] - pieceCount[1]);
+int evaluateBoard(Board* board) {
+    array<int, 2> pieceCount = countTiles(board);
+    return (pieceCount[0] - pieceCount[1] - (board->moveAmount[0] - board->moveAmount[1]));
 }
 
-bool canMoveThere(Board board, TilePosition targetPosition) {
-    return targetPosition.value(board) == ' ';
+bool canMoveThere(Board* board, TilePosition* targetPosition) {
+    return targetPosition->value(board) == ' ';
 }
 
 Board makeMove(Board board, Move move, bool isBlack) {
-    Board newBoard = board;
+    if (move.from_.ring != -1) board.array.at(move.from_.ring).at(move.from_.i) = ' ';
+    if (move.to.ring != -1) board.array.at(move.to.ring).at(move.to.i) = (isBlack ? 'b' : 'w');
+    if (move.removeTile.ring != -1) board.array.at(move.removeTile.ring).at(move.removeTile.i) = ' ';
 
-    if (move.from_.ring != -1) newBoard.array.at(move.from_.ring).at(move.from_.i) = ' ';
-    if (move.to.ring != -1) newBoard.array.at(move.to.ring).at(move.to.i) = (isBlack ? 'b' : 'w');
-    if (move.removeTile.ring != -1) newBoard.array.at(move.removeTile.ring).at(move.removeTile.i) = ' ';
+    ++board.moveAmount[!isBlack];
 
-    ++newBoard.moveAmount[move.to.value(newBoard)];
-
-    array<int, 2> tileCount = countTiles(&newBoard);
-    if (board.gameState == BEGINNING && (board.moveAmount['b'] >= 9 && board.moveAmount['w'] >= 9)) {
-        newBoard.gameState = NORMAL;
+    array<int, 2> tileCount = countTiles(&board);
+    if (board.gameState == BEGINNING && (board.moveAmount[0] >= 9 && board.moveAmount[1] >= 9)) {
+        board.gameState = NORMAL;
     } else if (board.gameState == NORMAL && (tileCount[0] == 3 || tileCount[1] == 3)) {
-        newBoard.gameState = ENDING;
+        board.gameState = ENDING;
     } else if (board.gameState == ENDING && (tileCount[0] < 3 || tileCount[1] < 3)) {
-        newBoard.gameState = FINISHED;
+        board.gameState = FINISHED;
     }
 
-    return newBoard;
+    return board;
 }
 
-list<Move> createListWithRemovedTiles(Board board, TilePosition from, TilePosition to, bool isBlack) {
+list<Move> createListWithRemovedTiles(Board* board, TilePosition from, TilePosition* to, bool isBlack) {
     list<Move> moves;
 
-    if (!isInMill(makeMove(board, Move{from, to}, isBlack), to, isBlack)) {
-        moves.push_back(Move{from, to, {}});
+    Board newBoard = makeMove((*board), Move{from, (*to), {}}, isBlack);
+    if (!isInMill(&newBoard, to, isBlack)) {
+        moves.push_back(Move{from, (*to), {}});
     } else {
         for (int ringI = 0; ringI < 3; ringI++) {
             for (int i = 0; i < 8; i++) {
@@ -182,8 +179,8 @@ list<Move> createListWithRemovedTiles(Board board, TilePosition from, TilePositi
                 if (tilePositionValue == 'b' && isBlack) continue;
                 if (tilePositionValue == 'w' && !isBlack) continue;
                 
-                if (!isInMill(board, tilePosition, !isBlack)) {
-                    moves.push_back(Move{from, to, tilePosition});
+                if (!isInMill(board, &tilePosition, !isBlack)) {
+                    moves.push_back(Move{(from), (*to), tilePosition});
                 }
             }
         }
@@ -192,53 +189,52 @@ list<Move> createListWithRemovedTiles(Board board, TilePosition from, TilePositi
     return moves;
 }
 
-list<Move> getPossibleMovesForTile(Board board, TilePosition tilePosition, bool isBlack) {
+list<Move> getPossibleMovesForTile(Board* board, TilePosition* tilePosition, bool isBlack) {
     list<Move> possibleMoves;
     list<TilePosition> targetPositions;
 
-    if (tilePosition.ring % 2 != 0) {
-        targetPositions.push_back(TilePosition{tilePosition.ring - 1, tilePosition.i});
-        targetPositions.push_back(TilePosition{tilePosition.ring + 1, tilePosition.i});
+    if (tilePosition->ring % 2 != 0) {
+        targetPositions.push_back(TilePosition{tilePosition->ring - 1, tilePosition->i});
+        targetPositions.push_back(TilePosition{tilePosition->ring + 1, tilePosition->i});
     }
 
-    targetPositions.push_back(TilePosition{tilePosition.ring, tilePosition.i - 1});
-    targetPositions.push_back(TilePosition{tilePosition.ring, tilePosition.i + 1});
+    targetPositions.push_back(TilePosition{tilePosition->ring, tilePosition->i - 1});
+    targetPositions.push_back(TilePosition{tilePosition->ring, tilePosition->i + 1});
 
     for (TilePosition targetPosition : targetPositions) {
         targetPosition.wrapAround();
 
-        if (canMoveThere(board, targetPosition)) {
-            possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, tilePosition, targetPosition, isBlack));
+        if (canMoveThere(board, &targetPosition)) {
+            possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, (*tilePosition), &targetPosition, isBlack));
         }
     }
 
     return possibleMoves;
 }
 
-list<Move> getPossibleEndingMovesForTile(Board board, TilePosition tilePosition, bool isBlack) {
+list<Move> getPossibleEndingMovesForTile(Board* board, TilePosition* tilePosition, bool isBlack) {
     list<Move> possibleMoves;
 
     for (int targetRingI = 0; targetRingI < 3; targetRingI++) {
         for (int targetI = 0; targetI < 8; targetI++) {
             TilePosition targetTilePosition = {targetRingI, targetI};
-            possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, tilePosition, targetTilePosition, isBlack));
+            possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, (*tilePosition), &targetTilePosition, isBlack));
         }
     }
 
     return possibleMoves;
 }
 
-list<Move> getPossibleMoves(Board board, bool isBlack) {
+list<Move> getPossibleMoves(Board* board, bool isBlack) {
     list<Move> possibleMoves;
-    char ownTileChar = (isBlack ? 'b' : 'w');
-    int ownTileCount = countTiles(&board)[!isBlack];
+    int ownTileCount = countTiles(board)[!isBlack];
 
-    if (board.gameState == BEGINNING && board.moveAmount[ownTileChar] < 9) { // If game is at start
+    if (board->gameState == BEGINNING && board->moveAmount[!isBlack] < 9) { // If game is at start
         for (int ringI = 0; ringI < 3; ringI++) {
             for (int i = 0; i < 8; i++) {
                 TilePosition targetPosition = {ringI, i};
-                if (canMoveThere(board, targetPosition)) { // If field is empty
-                    possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, {}, targetPosition, isBlack));
+                if (canMoveThere(board, &targetPosition)) { // If field is empty
+                    possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, {}, &targetPosition, isBlack));
                 }
             }
         }
@@ -249,11 +245,12 @@ list<Move> getPossibleMoves(Board board, bool isBlack) {
                 char tileValue = tilePosition.value(board);
 
                 if (tileValue == ' ') continue;
-                if (tileValue != ownTileChar) continue;
+                if (tileValue == 'b' && !isBlack) continue;
+                if (tileValue == 'w' && isBlack) continue;
                 
-                possibleMoves.splice(possibleMoves.end(), (board.gameState == (ENDING && ownTileCount == 3) ? 
-                    getPossibleEndingMovesForTile(board, tilePosition, isBlack) :
-                    getPossibleMovesForTile(board, {ringI, i}, isBlack)));
+                possibleMoves.splice(possibleMoves.end(), (board->gameState == (ENDING && ownTileCount == 3) ? 
+                    getPossibleEndingMovesForTile(board, &tilePosition, isBlack) :
+                    getPossibleMovesForTile(board, &tilePosition, isBlack)));
             }
         }
     }
@@ -266,14 +263,14 @@ list<Move> getPossibleMoves(Board board, bool isBlack) {
 }
 
 int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int beta = infinity) {
-    if (depth == 0 || (*board).gameState == FINISHED) {
-        return evaluateBoard(*board);
+    if (depth == 0 || board->gameState == FINISHED) {
+        return evaluateBoard(board);
     }
 
     if (isBlack) {
         int maxEval = -infinity;
 
-        list<Move> moves = getPossibleMoves(*board, isBlack);
+        list<Move> moves = getPossibleMoves(board, isBlack);
         for (Move move : moves) {
             Board newBoard = makeMove(*board, move, isBlack);
 
@@ -290,7 +287,7 @@ int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int be
     } else {
         int minEval = infinity;
 
-        list<Move> moves = getPossibleMoves(*board, isBlack);
+        list<Move> moves = getPossibleMoves(board, isBlack);
         for (Move move : moves) {
             Board newBoard = makeMove(*board, move, isBlack);
 
@@ -310,10 +307,10 @@ int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int be
 int main() {
     Board debugBoard;
 
-    debugBoard = makeMove(debugBoard, (*getPossibleMoves(debugBoard, false).begin()), false);
+    debugBoard = makeMove(debugBoard, (*getPossibleMoves(&debugBoard, false).begin()), false);
     printBoard(debugBoard);
 
-    list<Move> possibleMoves = getPossibleMoves(debugBoard, true);
+    list<Move> possibleMoves = getPossibleMoves(&debugBoard, true);
 
     Board newBoard = makeMove(debugBoard, (*possibleMoves.begin()), true);
     cout << minimax(&newBoard, 6, true) << endl;
