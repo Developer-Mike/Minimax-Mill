@@ -44,8 +44,8 @@ struct TilePosition {
     }
 
     void wrapAround() {
-        if (i < 0) i = 7;
-        if (i > 7) i = 0;
+        if (i < 0) i += 8;
+        if (i > 7) i -= 8;
     }
 };
 
@@ -95,7 +95,7 @@ array<int, 2> countTiles(Board* board) {
 
 bool allEqual(array<char, 3>* a) {
     char first = (*a)[0];
-    for (int item : *a) {
+    for (char item : *a) {
         if (item != first) return false;
     }
     return true;
