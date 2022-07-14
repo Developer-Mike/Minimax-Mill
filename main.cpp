@@ -71,20 +71,26 @@ void printBoard(Board board) {
     cout << board.array[0][6] << "--" << board.array[0][5] << "--" << board.array[0][4] << endl;
 }
 
-map<char, int> countTiles(Board* board) {
-    map<char, int> pieceCount = {
-        {'b', 0},
-        {'w', 0},
-        {' ', 0}
-    };
+array<int, 2> countTiles(Board* board) {
+    int bCount = 0;
+    int wCount = 0;
 
     for (int ringI = 0; ringI < 3; ringI++) {
         for (int i = 0; i < 8; i++) {
-            ++pieceCount[(*board).array[ringI][i]];
+            switch ((*board).array[ringI][i]) {
+                case 'b':
+                    bCount++;
+                    break;
+                case 'w':
+                    wCount++;
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
-    return pieceCount;
+    return {bCount, wCount};
 }
 
 bool isInMill(Board board, TilePosition tilePosition, bool isBlack) {
@@ -132,9 +138,8 @@ bool isInMill(Board board, TilePosition tilePosition, bool isBlack) {
 }
 
 int evaluateBoard(Board board) {
-    map<char, int> pieceCount = countTiles(&board);
-
-    return (pieceCount['b'] - pieceCount['w']);
+    array<int, 2> pieceCount = countTiles(&board);
+    return (pieceCount[0] - pieceCount[1]);
 }
 
 bool canMoveThere(Board board, TilePosition targetPosition) {
@@ -150,12 +155,12 @@ Board makeMove(Board board, Move move, bool isBlack) {
 
     ++newBoard.moveAmount[move.to.value(newBoard)];
 
-    map<char, int> tileCount = countTiles(&newBoard);
+    array<int, 2> tileCount = countTiles(&newBoard);
     if (board.gameState == BEGINNING && (board.moveAmount['b'] >= 9 && board.moveAmount['w'] >= 9)) {
         newBoard.gameState = NORMAL;
-    } else if (board.gameState == NORMAL && (tileCount['b'] == 3 || tileCount['w'] == 3)) {
+    } else if (board.gameState == NORMAL && (tileCount[0] == 3 || tileCount[1] == 3)) {
         newBoard.gameState = ENDING;
-    } else if (board.gameState == ENDING && (tileCount['b'] < 3 || tileCount['w'] < 3)) {
+    } else if (board.gameState == ENDING && (tileCount[0] < 3 || tileCount[1] < 3)) {
         newBoard.gameState = FINISHED;
     }
 
@@ -226,7 +231,7 @@ list<Move> getPossibleEndingMovesForTile(Board board, TilePosition tilePosition,
 list<Move> getPossibleMoves(Board board, bool isBlack) {
     list<Move> possibleMoves;
     char ownTileChar = (isBlack ? 'b' : 'w');
-    int ownTileCount = countTiles(&board)[ownTileChar];
+    int ownTileCount = countTiles(&board)[!isBlack];
 
     if (board.gameState == BEGINNING && board.moveAmount[ownTileChar] < 9) { // If game is at start
         for (int ringI = 0; ringI < 3; ringI++) {

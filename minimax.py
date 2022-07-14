@@ -101,7 +101,7 @@ def make_move():
             best_move = move
             best_move_value = move_value
 
-    print(f"Best move score: {best_move_value}")
+    print(f"\nBest move score: {best_move_value}")
     board = core.makeMove(board, best_move, not player_is_black)
     refresh_fields()
 
