@@ -6,6 +6,7 @@
         "unordered_map": "cpp",
         "tuple": "cpp",
         "array": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "xtree": "cpp"
     }
 }

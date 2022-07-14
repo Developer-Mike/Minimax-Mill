@@ -7,7 +7,7 @@
 #include <map>
 #include <set>
 #include <limits>
-#include <tuple>
+#include <cmath>
 using namespace std;
 
 const int infinity = numeric_limits<int>::max();
@@ -93,43 +93,41 @@ array<int, 2> countTiles(Board* board) {
     return {bCount, wCount};
 }
 
+bool allEqual(array<char, 3>* a) {
+    char first = (*a)[0];
+    for (int item : *a) {
+        if (item != first) return false;
+    }
+    return true;
+}
+
 bool isInMill(Board* board, TilePosition* tilePosition, bool isBlack) {
-    if ((*tilePosition).i % 2 != 0) {
-        // Check row
-        TilePosition leftTile = (*tilePosition);
-        leftTile.i--;
+    // Check Sides
+    array<int, 2> startIs = {int(floor(tilePosition->i / 2) * 2), int((tilePosition->i % 2 == 0) ? (tilePosition->i - 2) : -1)};
+    
+    for (int startI : startIs) {
+        if (startI == -1) continue;
+        array<char, 3> sideTiles;
 
-        TilePosition rightTile = (*tilePosition);
-        rightTile.i++;
-
-        if (leftTile.value(board) == (isBlack ? 'b' : 'w') && leftTile.value(board) == rightTile.value(board)) {
-            return true;
-        }
-
-        // Check for ring
-        set<char> otherTileValues;
-        int arrayI = 0;
-        for (int ringI = 0; ringI < 3; ringI++) {
-            if ((*tilePosition).ring == ringI) continue;
-
-            otherTileValues.insert(TilePosition{ringI, (*tilePosition).i}.value(board));
-            arrayI++;
-        }
-
-        if (otherTileValues.size() == 1 && *(otherTileValues.begin()) == (isBlack ? 'b' : 'w')) {
-            return true;
-        }
-    } else  {
-        // Check edge
         for (int relI = 0; relI < 3; relI++) {
-            /*set<char> otherTileSet;
-            for (int i = 1; i < 3; i++) {
-                otherTileSet.insert(TilePosition{(*tilePosition).ring, (*tilePosition).i + (direction * i)}.value(board));
-            }
+            sideTiles[relI] = TilePosition{tilePosition->ring, startI + relI}.value(board);
+        }
 
-            if (otherTileSet.size() == 1 && *(otherTileSet.begin()) == (isBlack ? 'b' : 'w')) {
-                return true;
-            }*/
+        if (allEqual(&sideTiles) && sideTiles[0] == (isBlack ? 'b' : 'w')) {
+            return true;
+        }
+    }
+
+    // Check Crosshair
+    if (tilePosition->i % 2 != 0) {
+        array<char, 3> crosshairTiles;
+
+        for (int ringI = 0; ringI < 3; ringI++) {
+            crosshairTiles[ringI] = TilePosition{ringI, tilePosition->i}.value(board);
+        }
+
+        if (allEqual(&crosshairTiles) && crosshairTiles[0] == (isBlack ? 'b' : 'w')) {
+            return true;
         }
     }
     return false;
