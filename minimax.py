@@ -1,5 +1,6 @@
 print("Compiling...")
-from dataclasses import field
+from array import array
+from dataclasses import field, replace
 import cppyy
 cppyy.cppdef(open("main.cpp").read())
 import cppyy.gbl as core
@@ -46,7 +47,7 @@ pixel = tkinter.PhotoImage(width=40, height=40)
 player_is_black = True
 black_turn = True
 depth = 6
-board = core.Board({ 16, 16 }, { { ' ', ' ', ' ', 'w', ' ', 'b', 'w', 'w' }, { ' ', ' ', ' ', ' ', 'b', 'b', 'b', ' ' }, { ' ', ' ', ' ', 'b', ' ', 'b', ' ', ' ' } }, 2)
+board = core.Board()
 fields = [[], [], []]
 
 def tile_position_equal(pos1, pos2):
@@ -121,7 +122,10 @@ def make_move():
     et_remove_entry.delete(0, tkinter.END)
 
     et_from_entry.focus()
-    print(f"core.Board({board.moveAmount}, {board.array}, {board.gameState})")
+
+    move_amount = str(board.moveAmount).replace("{", "(").replace("}", ")")
+    board_array = str(board.array).replace("{", "(").replace("}", ")")
+    print(f"core.Board({move_amount}, {board_array}, {board.gameState})")
 
 def field_pressed(ring_i, i):
     global et_from_entry, et_to_entry, et_remove_entry

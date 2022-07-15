@@ -191,7 +191,7 @@ list<Move> getPossibleMovesForTile(Board* board, TilePosition* tilePosition, boo
     list<Move> possibleMoves;
     list<TilePosition> targetPositions;
 
-    if (tilePosition->ring % 2 != 0) {
+    if (tilePosition->i % 2 != 0) {
         targetPositions.push_back(TilePosition{tilePosition->ring - 1, tilePosition->i});
         targetPositions.push_back(TilePosition{tilePosition->ring + 1, tilePosition->i});
     }
