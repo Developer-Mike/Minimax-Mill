@@ -102,7 +102,7 @@ bool allEqual(array<char, 3>* a) {
 }
 
 bool isInMill(Board* board, TilePosition* tilePosition, bool isBlack) {
-    // Check Sides
+    // Check Sides TODO
     array<int, 2> startIs = {int(floor(tilePosition->i / 2) * 2), int((tilePosition->i % 2 == 0) ? (tilePosition->i - 2) : -1)};
     
     for (int startI : startIs) {
@@ -170,15 +170,15 @@ list<Move> createListWithRemovedTiles(Board* board, TilePosition from, TilePosit
     } else {
         for (int ringI = 0; ringI < 3; ringI++) {
             for (int i = 0; i < 8; i++) {
-                TilePosition tilePosition = {ringI, i};
-                char tilePositionValue = tilePosition.value(board);
+                TilePosition removeTilePosition = {ringI, i};
+                char tilePositionValue = removeTilePosition.value(board);
 
                 if (tilePositionValue == ' ') continue;
                 if (tilePositionValue == 'b' && isBlack) continue;
                 if (tilePositionValue == 'w' && !isBlack) continue;
                 
-                if (!isInMill(board, &tilePosition, !isBlack)) {
-                    moves.push_back(Move{(from), (*to), tilePosition});
+                if (!isInMill(&newBoard, &removeTilePosition, !isBlack)) {
+                    moves.push_back(Move{(from), (*to), removeTilePosition});
                 }
             }
         }
@@ -246,9 +246,9 @@ list<Move> getPossibleMoves(Board* board, bool isBlack) {
                 if (tileValue == 'b' && !isBlack) continue;
                 if (tileValue == 'w' && isBlack) continue;
                 
-                possibleMoves.splice(possibleMoves.end(), (board->gameState == (ENDING && ownTileCount == 3) ? 
+                possibleMoves.splice(possibleMoves.end(), (board->gameState == ENDING && ownTileCount == 3) ? 
                     getPossibleEndingMovesForTile(board, &tilePosition, isBlack) :
-                    getPossibleMovesForTile(board, &tilePosition, isBlack)));
+                    getPossibleMovesForTile(board, &tilePosition, isBlack));
             }
         }
     }
@@ -303,15 +303,14 @@ int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int be
 }
 
 int main() {
-    Board debugBoard;
+    Board debugBoard = {{0, 0}, {{
+        {' ', ' ', 'b', 'b', ' ', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
+    }}};
 
-    debugBoard = makeMove(debugBoard, (*getPossibleMoves(&debugBoard, false).begin()), false);
-    printBoard(debugBoard);
-
-    list<Move> possibleMoves = getPossibleMoves(&debugBoard, true);
-
-    Board newBoard = makeMove(debugBoard, (*possibleMoves.begin()), true);
-    cout << minimax(&newBoard, 6, true) << endl;
+    TilePosition debugTilePosition = {0, 2};
+    cout << isInMill(&debugBoard, &debugTilePosition, true) << endl;
     
     return 0;
 }
