@@ -1,15 +1,11 @@
 print("Compiling...")
-from array import array
-from dataclasses import field, replace
 import cppyy
 cppyy.cppdef(open("main.cpp").read())
 import cppyy.gbl as core
 print("Compiled.")
 
-from json.encoder import INFINITY
 import tkinter
 import tkinter.ttk as tk
-import tqdm
 import time
 
 positions = {
@@ -123,8 +119,8 @@ def make_move():
 
     et_from_entry.focus()
 
-    move_amount = str(board.moveAmount).replace("{", "(").replace("}", ")")
-    board_array = str(board.array).replace("{", "(").replace("}", ")")
+    move_amount = str(board.moveAmount).replace("{ ", "(").replace(" }", ")")
+    board_array = str(board.array).replace("{ ", "(").replace(" }", ")")
     print(f"core.Board({move_amount}, {board_array}, {board.gameState})")
 
 def field_pressed(ring_i, i):

@@ -202,7 +202,7 @@ list<Move> getPossibleMovesForTile(Board* board, TilePosition* tilePosition, boo
     for (TilePosition targetPosition : targetPositions) {
         targetPosition.wrapAround();
 
-        if (canMoveThere(board, &targetPosition)) {
+        if (canMoveThere(board, &targetPosition)) { // If field is empty
             possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, (*tilePosition), &targetPosition, isBlack));
         }
     }
@@ -216,7 +216,10 @@ list<Move> getPossibleEndingMovesForTile(Board* board, TilePosition* tilePositio
     for (int targetRingI = 0; targetRingI < 3; targetRingI++) {
         for (int targetI = 0; targetI < 8; targetI++) {
             TilePosition targetTilePosition = {targetRingI, targetI};
-            possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, (*tilePosition), &targetTilePosition, isBlack));
+
+            if (canMoveThere(board, &targetTilePosition)) { // If field is empty
+                possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, (*tilePosition), &targetTilePosition, isBlack));
+            }
         }
     }
 
@@ -231,6 +234,7 @@ list<Move> getPossibleMoves(Board* board, bool isBlack) {
         for (int ringI = 0; ringI < 3; ringI++) {
             for (int i = 0; i < 8; i++) {
                 TilePosition targetPosition = {ringI, i};
+
                 if (canMoveThere(board, &targetPosition)) { // If field is empty
                     possibleMoves.splice(possibleMoves.end(), createListWithRemovedTiles(board, {}, &targetPosition, isBlack));
                 }
