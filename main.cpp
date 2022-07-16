@@ -2,12 +2,11 @@
 #include <algorithm>
 #include <string>
 #include <list>
+#include <vector>
 #include <array>
-#include <iterator>
-#include <map>
-#include <set>
 #include <limits>
 #include <cmath>
+#include <thread>
 using namespace std;
 
 const int infinity = numeric_limits<int>::max();
@@ -306,15 +305,46 @@ int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int be
     }
 }
 
+Move getBestMove(Board* board, bool isBlack, int depth) {
+    list<Move> possibleMoves = getPossibleMoves(board, isBlack);
+    list<thread> threads;
+
+    int bestEval = isBlack ? -infinity : infinity;
+    int& bestEvalPtr = bestEval;
+
+    Move bestMove;
+    Move& bestMovePtr = bestMove;
+
+    auto evaluateMove = [board, isBlack, depth, &bestEval, &bestMove](Move* move) {
+        Board newBoard = makeMove(*board, *move, isBlack);
+        int eval = minimax(&newBoard, depth, isBlack);
+
+        if ((isBlack && eval > bestEval) || (!isBlack && eval < bestEval)) {
+            bestEval = eval;
+            bestMove = (*move);
+        }
+    };
+
+    for (Move move : possibleMoves) {
+        threads.push_back(thread(evaluateMove, &move));
+    }
+
+    for (thread& thread : threads) {
+        thread.join();
+    }
+
+    cout << endl << "Best value: " << bestEval << endl;
+    return bestMove;
+}
+
 int main() {
-    Board debugBoard = {{0, 0}, {{
+    Board debugBoard = {{2, 0}, {{
         {' ', ' ', 'b', 'b', ' ', ' ', ' ', ' '},
         {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
         {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
     }}};
 
-    TilePosition debugTilePosition = {0, 2};
-    cout << isInMill(&debugBoard, &debugTilePosition, true) << endl;
+    cout << getBestMove(&debugBoard, false, 3).toString() << endl;
     
     return 0;
 }

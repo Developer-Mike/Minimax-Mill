@@ -7,6 +7,8 @@
         "tuple": "cpp",
         "array": "cpp",
         "utility": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "thread": "cpp",
+        "set": "cpp"
     }
 }

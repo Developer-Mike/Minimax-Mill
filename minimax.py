@@ -1,5 +1,6 @@
 print("Compiling...")
 import cppyy
+import cppyy.numba_ext
 cppyy.cppdef(open("main.cpp").read())
 import cppyy.gbl as core
 print("Compiled.")
@@ -7,44 +8,7 @@ print("Compiled.")
 import tkinter
 import tkinter.ttk as tk
 import time
-
-positions = {
-    (0, 0): (0, 0),
-    (0, 1): (0, 3),
-    (0, 2): (0, 6),
-    (0, 3): (3, 6),
-    (0, 4): (6, 6),
-    (0, 5): (6, 3),
-    (0, 6): (6, 0),
-    (0, 7): (3, 0),
-
-    (1, 0): (1, 1),
-    (1, 1): (1, 3),
-    (1, 2): (1, 5),
-    (1, 3): (3, 5),
-    (1, 4): (5, 5),
-    (1, 5): (5, 3),
-    (1, 6): (5, 1),
-    (1, 7): (3, 1),
-
-    (2, 0): (2, 2),
-    (2, 1): (2, 3),
-    (2, 2): (2, 4),
-    (2, 3): (3, 4),
-    (2, 4): (4, 4),
-    (2, 5): (4, 3),
-    (2, 6): (4, 2),
-    (2, 7): (3, 2),
-}
-
-root = tkinter.Tk()
-pixel = tkinter.PhotoImage(width=40, height=40)
-
-player_is_black = True
-black_turn = True
-depth = 6
-board = core.Board()
-fields = [[], [], []]
+import numba as nb
 
 def tile_position_equal(pos1, pos2):
     return pos1.ring == pos2.ring and pos1.i == pos2.i
@@ -54,7 +18,7 @@ def is_move_possible(move, possible_moves):
         if tile_position_equal(possible_move.from_, move.from_) and tile_position_equal(possible_move.to, move.to) and tile_position_equal(possible_move.removeTile, move.removeTile):
             return True
     return False
- 
+
 def make_move():
     global fields, player_is_black, black_turn, board, et_from_entry, et_to_entry, et_remove_entry
 
@@ -93,18 +57,8 @@ def make_move():
     print("Processing")
     start = time.time()
 
-    best_move = None
-    best_move_value = None
-    for move in core.getPossibleMoves(board, not player_is_black):
-        start_minimax = time.time()
-        move_value = core.minimax(core.makeMove(board, move, not player_is_black), depth, not player_is_black)
-        print(f"Minimax took {time.time() - start_minimax} seconds")
+    best_move = core.getBestMove(board, not player_is_black, depth)
 
-        if best_move is None or (best_move_value < move_value and not player_is_black) or (best_move_value > move_value and player_is_black):
-            best_move = move
-            best_move_value = move_value
-
-    print(f"\nBest move score: {best_move_value}")
     print(f"Best move: {best_move.toString()}")
 
     board = core.makeMove(board, best_move, not player_is_black)
@@ -146,6 +100,47 @@ def refresh_fields():
         for i in range(8):
             field = fields[ring_i][i]
             field["text"] = board.array[ring_i][i]
+
+if __name__ != "__main__":
+    exit()
+
+positions = {
+    (0, 0): (0, 0),
+    (0, 1): (0, 3),
+    (0, 2): (0, 6),
+    (0, 3): (3, 6),
+    (0, 4): (6, 6),
+    (0, 5): (6, 3),
+    (0, 6): (6, 0),
+    (0, 7): (3, 0),
+
+    (1, 0): (1, 1),
+    (1, 1): (1, 3),
+    (1, 2): (1, 5),
+    (1, 3): (3, 5),
+    (1, 4): (5, 5),
+    (1, 5): (5, 3),
+    (1, 6): (5, 1),
+    (1, 7): (3, 1),
+
+    (2, 0): (2, 2),
+    (2, 1): (2, 3),
+    (2, 2): (2, 4),
+    (2, 3): (3, 4),
+    (2, 4): (4, 4),
+    (2, 5): (4, 3),
+    (2, 6): (4, 2),
+    (2, 7): (3, 2),
+}
+
+root = tkinter.Tk()
+pixel = tkinter.PhotoImage(width=40, height=40)
+
+player_is_black = True
+black_turn = True
+depth = 7
+board = core.Board()
+fields = [[], [], []]
 
 #7x7 grid
 game_frame = tk.Frame(root)
