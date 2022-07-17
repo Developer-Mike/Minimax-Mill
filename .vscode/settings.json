@@ -9,6 +9,7 @@
         "utility": "cpp",
         "xtree": "cpp",
         "thread": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "xutility": "cpp"
     }
 }

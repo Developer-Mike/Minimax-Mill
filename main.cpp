@@ -2,11 +2,11 @@
 #include <algorithm>
 #include <string>
 #include <list>
-#include <vector>
 #include <array>
 #include <limits>
 #include <cmath>
 #include <thread>
+#include <chrono>
 using namespace std;
 
 const int infinity = numeric_limits<int>::max();
@@ -305,6 +305,20 @@ int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int be
     }
 }
 
+void evaluateMove(Board* board, Move* move, bool isBlack, int depth, int &bestEval, Move &bestMove) {
+    chrono::steady_clock::time_point start = chrono::steady_clock::now();
+
+    Board newBoard = makeMove(*board, *move, isBlack);
+    int eval = minimax(&newBoard, depth, isBlack);
+
+    if ((isBlack && eval > bestEval) || (!isBlack && eval < bestEval)) {
+        bestEval = eval;
+        bestMove = (*move);
+    }
+
+    cout << "Took: " << chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count() << "ms" << endl;
+}
+
 Move getBestMove(Board* board, bool isBlack, int depth) {
     list<Move> possibleMoves = getPossibleMoves(board, isBlack);
     list<thread> threads;
@@ -315,21 +329,11 @@ Move getBestMove(Board* board, bool isBlack, int depth) {
     Move bestMove;
     Move& bestMovePtr = bestMove;
 
-    auto evaluateMove = [board, isBlack, depth, &bestEval, &bestMove](Move* move) {
-        Board newBoard = makeMove(*board, *move, isBlack);
-        int eval = minimax(&newBoard, depth, isBlack);
-
-        if ((isBlack && eval > bestEval) || (!isBlack && eval < bestEval)) {
-            bestEval = eval;
-            bestMove = (*move);
-        }
-    };
-
     for (Move move : possibleMoves) {
-        threads.push_back(thread(evaluateMove, &move));
+        threads.push_back(thread(evaluateMove, board, &move, isBlack, depth, ref(bestEvalPtr), ref(bestMovePtr)));
     }
 
-    for (thread& thread : threads) {
+    for (thread &thread : threads) {
         thread.join();
     }
 
@@ -338,13 +342,13 @@ Move getBestMove(Board* board, bool isBlack, int depth) {
 }
 
 int main() {
-    Board debugBoard = {{2, 0}, {{
+    Board debugBoard = {{2, 1}, {{
         {' ', ' ', 'b', 'b', ' ', ' ', ' ', ' '},
-        {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '},
+        {' ', ' ', ' ', 'w', ' ', ' ', ' ', ' '},
         {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
     }}};
 
-    cout << getBestMove(&debugBoard, false, 3).toString() << endl;
+    cout << getBestMove(&debugBoard, false, 8).toString() << endl;
     
     return 0;
 }
