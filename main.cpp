@@ -305,15 +305,15 @@ int minimax(Board* board, int depth, bool isBlack, int alpha = -infinity, int be
     }
 }
 
-void evaluateMove(Board* board, Move* move, bool isBlack, int depth, int &bestEval, Move &bestMove) {
+void evaluateMove(Board board, Move move, bool isBlack, int depth, int &bestEval, Move &bestMove) {
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
 
-    Board newBoard = makeMove(*board, *move, isBlack);
+    Board newBoard = makeMove(board, move, isBlack);
     int eval = minimax(&newBoard, depth, isBlack);
 
     if ((isBlack && eval > bestEval) || (!isBlack && eval < bestEval)) {
         bestEval = eval;
-        bestMove = (*move);
+        bestMove = move;
     }
 
     cout << "Took: " << chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - start).count() << "ms" << endl;
@@ -330,7 +330,7 @@ Move getBestMove(Board* board, bool isBlack, int depth) {
     Move& bestMovePtr = bestMove;
 
     for (Move move : possibleMoves) {
-        threads.push_back(thread(evaluateMove, board, &move, isBlack, depth, ref(bestEvalPtr), ref(bestMovePtr)));
+        threads.push_back(thread(evaluateMove, *board, move, isBlack, depth, ref(bestEvalPtr), ref(bestMovePtr)));
     }
 
     for (thread &thread : threads) {

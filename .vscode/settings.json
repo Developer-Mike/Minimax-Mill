@@ -10,6 +10,8 @@
         "xtree": "cpp",
         "thread": "cpp",
         "set": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "type_traits": "cpp",
+        "chrono": "cpp"
     }
 }

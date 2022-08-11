@@ -1,6 +1,5 @@
 print("Compiling...")
 import cppyy
-import cppyy.numba_ext
 cppyy.cppdef(open("main.cpp").read())
 import cppyy.gbl as core
 print("Compiled.")
@@ -8,7 +7,6 @@ print("Compiled.")
 import tkinter
 import tkinter.ttk as tk
 import time
-import numba as nb
 
 def tile_position_equal(pos1, pos2):
     return pos1.ring == pos2.ring and pos1.i == pos2.i
